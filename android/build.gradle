@@ -1,0 +1,35 @@
+// Top-level build.gradle file
+
+// Define repositories for all projects
+allprojects {
+    repositories {
+        google() // For Android dependencies
+        mavenCentral() // For general Java/Kotlin dependencies
+    }
+}
+
+// Configure the build script dependencies
+buildscript {
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.0.2' // Android Gradle plugin
+        classpath 'com.google.gms:google-services:4.3.15'
+         // Google Services plugin
+    }
+}
+
+// Shared build directory setup
+rootProject.buildDir = "../build"
+
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}" // Organize subproject builds
+}
+
+// Ensure app module dependencies are evaluated before others
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+// Task to clean the build directory
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

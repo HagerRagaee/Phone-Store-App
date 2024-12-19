@@ -1,0 +1,192 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
+import 'package:material_dialogs/dialogs.dart';
+import 'package:material_dialogs/widgets/buttons/icon_button.dart';
+import 'package:phone_store/Classes/sales_class.dart';
+import 'package:phone_store/Classes/store_item_class.dart';
+import 'package:phone_store/Data/data_inventory_layer.dart';
+
+class FirebaseOperations {
+  static final FirebaseFirestore db = FirebaseFirestore.instance;
+  static final String salesCollectionName = "dailySales";
+
+  static Future<void> saveSaleRecord(
+      SaleRecord sale, BuildContext context) async {
+    try {
+      print(sale.itemName);
+      StoreItem? storeItem =
+          await FirebaseDatabase.searchStoreByName(sale.itemName);
+
+      if (storeItem == null) {
+        print("Product '${sale.itemName}' not found in inventory.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Product not found in inventory.")),
+        );
+        return; // Exit early if the product doesn't exist
+      }
+
+      // Check if the available quantity is sufficient
+      if (storeItem.quantity < sale.quantitySold) {
+        Dialogs.materialDialog(
+          dialogWidth: 300,
+          color: Colors.white,
+          msg:
+              "There is not enough quantity, available quantity is '${storeItem.quantity}'",
+          title: 'Error Quantity',
+          lottieBuilder: LottieBuilder.asset(
+            'images/error.json',
+            fit: BoxFit.contain,
+          ),
+          context: context,
+          actions: [
+            IconsButton(
+              padding: EdgeInsets.all(20),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              text: 'OK',
+              iconData: Icons.done,
+              color: Colors.red,
+              textStyle: const TextStyle(color: Colors.white),
+              iconColor: Colors.white,
+            ),
+          ],
+        );
+        print("Insufficient quantity available for '${sale.itemName}'.");
+        return; // Exit early if there's not enough quantity
+      }
+
+      DocumentReference docRef =
+          await db.collection(salesCollectionName).add(sale.toJson());
+      String docId = docRef.id; // Retrieve the document ID
+      print("Sale record saved successfully with ID: $docId");
+
+      await FirebaseDatabase.UpdateQuantityProduct(
+          sale.quantitySold, sale.itemName, false);
+
+      await docRef.update({'docId': docId});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("تم تسجيل البيع بنجاح")),
+      );
+    } catch (e) {
+      print("Error processing sale record: $e");
+      rethrow;
+    }
+  }
+
+  static Future<List<SaleRecord>> getTodaySales() async {
+    try {
+      DateTime now = DateTime.now();
+      DateTime startOfDay = DateTime(now.year, now.month, now.day);
+      DateTime endOfDay =
+          startOfDay.add(Duration(days: 1)).subtract(Duration(milliseconds: 1));
+
+      QuerySnapshot querySnapshot = await db
+          .collection(salesCollectionName)
+          .where('dateOfSale',
+              isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+          .where('dateOfSale', isLessThanOrEqualTo: endOfDay.toIso8601String())
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        print("No sales records found for today.");
+      } else {
+        print("${querySnapshot.docs.length} sales records retrieved.");
+      }
+
+      return querySnapshot.docs.map((doc) {
+        return SaleRecord.fromJson(
+          doc.data() as Map<String, dynamic>,
+          docId: doc.id, // Pass the document ID
+        );
+      }).toList();
+    } catch (e) {
+      print("Error retrieving today's sales records: $e");
+      rethrow;
+    }
+  }
+
+  static Future<List<SaleRecord>> getSalesByDate(List<DateTime?> dates) async {
+    List<SaleRecord> allSales = [];
+    try {
+      for (DateTime? date in dates) {
+        DateTime startOfDay = DateTime(date!.year, date.month, date.day);
+        DateTime endOfDay = startOfDay
+            .add(Duration(days: 1))
+            .subtract(Duration(milliseconds: 1));
+
+        QuerySnapshot querySnapshot = await db
+            .collection(salesCollectionName)
+            .where('dateOfSale',
+                isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+            .where('dateOfSale',
+                isLessThanOrEqualTo: endOfDay.toIso8601String())
+            .get();
+
+        if (querySnapshot.docs.isEmpty) {
+          print("No sales records found for today.");
+        } else {
+          print("${querySnapshot.docs.length} sales records retrieved.");
+        }
+
+        allSales.addAll(querySnapshot.docs.map((doc) {
+          return SaleRecord.fromJson(
+            doc.data() as Map<String, dynamic>,
+            docId: doc.id, // Pass the document ID
+          );
+        }).toList());
+      }
+
+      return allSales;
+    } catch (e) {
+      print("Error retrieving today's sales records: $e");
+      rethrow;
+    }
+  }
+
+  static Future<void> returnSaleRecord(
+      String saleId, BuildContext context) async {
+    try {
+      DocumentSnapshot saleSnapshot =
+          await db.collection(salesCollectionName).doc(saleId).get();
+
+      if (!saleSnapshot.exists) {
+        print("Sale record with ID '$saleId' does not exist.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Document not found"),
+          ),
+        );
+        return;
+      }
+
+      SaleRecord sale = SaleRecord.fromJson(
+        saleSnapshot.data() as Map<String, dynamic>,
+        docId: saleSnapshot.id,
+      );
+
+      await db.collection(salesCollectionName).doc(saleId).delete();
+
+      await FirebaseDatabase.UpdateQuantityProduct(
+          sale.quantitySold, sale.itemName, true);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("تم حذف السجل بنجاح"),
+        ),
+      );
+      print(
+          "Sale record with ID '$saleId' deleted successfully and inventory updated.");
+    } catch (e) {
+      print("Error deleting sale record: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("فشل حذف السجل."),
+        ),
+      );
+      rethrow;
+    }
+  }
+}
