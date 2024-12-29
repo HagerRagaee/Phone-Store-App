@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:phone_store/structure/balance_builder.dart';
 import 'package:phone_store/structure/sell_item_builder.dart';
 import 'package:phone_store/structure/service_builder.dart';
 
@@ -13,14 +14,14 @@ class _SellItemState extends State<SellItem> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           bottom: TabBar(
             tabs: [
               Tab(
                 child: Text(
-                  "Sell Item",
+                  "اكسسوار",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 17,
@@ -30,7 +31,17 @@ class _SellItemState extends State<SellItem> {
               ),
               Tab(
                 child: Text(
-                  "Service",
+                  "كاش",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Tab(
+                child: Text(
+                  "رصيد",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 17,
@@ -43,7 +54,7 @@ class _SellItemState extends State<SellItem> {
           backgroundColor: const Color.fromARGB(255, 98, 182, 250),
         ),
         body: TabBarView(
-          children: [sellItemBuilder(context), serviceBuilder(context)],
+          children: [SellItemBuilder(), ServiceBuilder(), BalanceBuilder()],
         ),
       ),
     );

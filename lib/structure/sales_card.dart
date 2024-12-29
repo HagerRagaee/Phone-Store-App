@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_dialogs/dialogs.dart';
 import 'package:material_dialogs/widgets/buttons/icon_button.dart';
 import 'package:phone_store/Classes/sales_class.dart';
 import 'package:phone_store/Data/data_inventory_layer.dart';
-import 'package:phone_store/Data/data_sales_layer.dart';
-import 'package:phone_store/Functions/sales_function.dart';
-import 'package:phone_store/structure/button_builder.dart';
+import 'package:phone_store/Statemangement/Cubit/Sales_Cubit/sales_cubit.dart';
+import 'package:phone_store/structure/sell_item_builder.dart';
 
 class SalesCard extends StatelessWidget {
-  final List<SaleRecord> items;
-
-  SalesCard({required this.items});
-
   @override
   Widget build(BuildContext context) {
+    List<SaleRecord> items = BlocProvider.of<SalesCubit>(context).items;
     return Card(
       elevation: 6,
       shape: RoundedRectangleBorder(
@@ -37,40 +34,6 @@ class SalesCard extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(height: 40),
-            Center(
-              child: ButtonBuilder(
-                buttonName: "مبيعات اليوم",
-                onPressed: () async {
-                  double totalSales = calculateTotalSales(items);
-
-                  Dialogs.materialDialog(
-                    dialogWidth: 300,
-                    color: Colors.white,
-                    msg: 'Total Sales: ${totalSales.toStringAsFixed(2)}',
-                    title: 'Daily Sales',
-                    lottieBuilder: LottieBuilder.asset(
-                      'images/profit2.json',
-                      fit: BoxFit.contain,
-                    ),
-                    context: context,
-                    actions: [
-                      IconsButton(
-                        padding: EdgeInsets.all(20),
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        text: 'OK',
-                        iconData: Icons.done,
-                        color: Colors.blue,
-                        textStyle: const TextStyle(color: Colors.white),
-                        iconColor: Colors.white,
-                      ),
-                    ],
-                  );
-                },
-              ),
-            )
           ],
         ),
       ),
@@ -83,7 +46,7 @@ class SalesCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: _buildTableCell('الربح', isHeader: true)),
-          Expanded(child: _buildTableCell('السعر', isHeader: true)),
+          Expanded(child: _buildTableCell('سعر البيع', isHeader: true)),
           Expanded(child: _buildTableCell('الكمية', isHeader: true)),
           Expanded(child: _buildTableCell('الصنف', isHeader: true)),
         ],
@@ -113,12 +76,12 @@ class SalesCard extends StatelessWidget {
                 IconsButton(
                   padding: EdgeInsets.all(20),
                   onPressed: () {
-                    FirebaseOperations.returnSaleRecord(item.docId!, context);
+                    BlocProvider.of<SalesCubit>(context)
+                        .returnSaleRecord(item.docId!, context);
                     Navigator.pop(context);
                   },
                   text: 'Return',
-                  iconData: Icons.done,
-                  color: Colors.blue,
+                  color: Colors.red,
                   textStyle: const TextStyle(color: Colors.white),
                   iconColor: Colors.white,
                 ),
@@ -126,10 +89,17 @@ class SalesCard extends StatelessWidget {
                   padding: EdgeInsets.all(20),
                   onPressed: () {
                     Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => SellItemBuilder(
+                          item: item,
+                          update: true,
+                        ),
+                      ),
+                    );
                   },
-                  text: 'Cancel',
-                  iconData: Icons.close,
-                  color: Colors.red,
+                  text: 'Update',
+                  color: Colors.blue,
                   textStyle: const TextStyle(color: Colors.white),
                   iconColor: Colors.white,
                 ),
@@ -139,7 +109,9 @@ class SalesCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                  child: _buildTableCell((item.salePrice - cost).toString())),
+                  child: _buildTableCell(
+                      ((item.salePrice) - (item.quantitySold * cost))
+                          .toString())),
               Expanded(child: _buildTableCell(item.salePrice.toString())),
               Expanded(child: _buildTableCell(item.quantitySold.toString())),
               Expanded(child: _buildTableCell(item.itemName)),

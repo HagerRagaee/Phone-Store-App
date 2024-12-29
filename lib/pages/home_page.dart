@@ -1,9 +1,11 @@
+import 'package:convex_bottom_bar/convex_bottom_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:phone_store/Statemangement/provider_store_class.dart';
 import 'package:phone_store/pages/add_store_items.dart';
 import 'package:phone_store/pages/sell_item.dart';
 import 'package:phone_store/pages/show_inventory_items.dart';
 import 'package:phone_store/pages/show_today%60s_sales.dart';
+import 'package:phone_store/pages/wallet_page.dart';
 import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -20,10 +22,64 @@ class _HomePageState extends State<HomePage> {
       SellItem(),
       ShowTodaysSales(),
       AddStoreItems(),
-      ShowInventoryItems()
+      ShowInventoryItems(),
+      WalletPage(),
     ];
 
     return Scaffold(
+      bottomNavigationBar: ConvexAppBar(
+        style: TabStyle.react,
+        backgroundColor: const Color.fromARGB(255, 250, 248, 248),
+        activeColor: Colors.black,
+        height: 60,
+        top: -12,
+        items: [
+          TabItem(
+            icon: Icon(
+              Icons.sell,
+              color: Colors.purple,
+              size: 30,
+            ),
+            title: 'بيع',
+          ),
+          TabItem(
+            icon: Icon(
+              Icons.attach_money,
+              color: Colors.purple,
+              size: 30,
+            ),
+            title: 'المبيعات',
+          ),
+          TabItem(
+            icon: Icon(
+              Icons.inventory,
+              color: Colors.purple,
+              size: 30,
+            ),
+            title: 'اضف الى المخزن',
+          ),
+          TabItem(
+            icon: Icon(
+              Icons.store,
+              color: Colors.purple,
+              size: 30,
+            ),
+            title: 'المخزن',
+          ),
+          TabItem(
+            icon: Icon(
+              Icons.wallet,
+              color: Colors.purple,
+              size: 30,
+            ),
+            title: 'المحافظ',
+          ),
+        ],
+        initialActiveIndex: Provider.of<ProvStore>(context).selectedIndex,
+        onTap: (index) {
+          Provider.of<ProvStore>(context, listen: false).onTappedItem(index);
+        },
+      ),
       body: Padding(
         padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
         child: Consumer<ProvStore>(
@@ -31,33 +87,6 @@ class _HomePageState extends State<HomePage> {
             return pages[prov.selectedIndex];
           },
         ),
-      ),
-      bottomNavigationBar: Consumer<ProvStore>(
-        builder: (context, prov, child) {
-          return BottomNavigationBar(
-            selectedItemColor: Colors.purple,
-            currentIndex: prov.selectedIndex,
-            onTap: (index) => prov.onTappedItem(index),
-            items: const [
-              BottomNavigationBarItem(
-                icon: Icon(Icons.sell, color: Colors.purple),
-                label: 'Sell Item',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.attach_money, color: Colors.purple),
-                label: 'Sales',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.inventory, color: Colors.purple),
-                label: 'Add to Store',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.store, color: Colors.purple),
-                label: 'Inventory',
-              ),
-            ],
-          );
-        },
       ),
     );
   }

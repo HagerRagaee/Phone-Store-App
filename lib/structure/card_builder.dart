@@ -4,13 +4,18 @@ import 'package:material_dialogs/dialogs.dart';
 import 'package:material_dialogs/widgets/buttons/icon_button.dart';
 import 'package:phone_store/Classes/store_item_class.dart';
 import 'package:phone_store/Data/data_inventory_layer.dart';
+import 'package:phone_store/pages/add_store_items.dart';
 
-class InventoryCard extends StatelessWidget {
-  final List<StoreItem> items; // A list of StoreItem objects
-  // Callback to handle item deletion
+class InventoryCard extends StatefulWidget {
+  final List<StoreItem> items;
 
   InventoryCard({required this.items});
 
+  @override
+  State<InventoryCard> createState() => _InventoryCardState();
+}
+
+class _InventoryCardState extends State<InventoryCard> {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -44,7 +49,7 @@ class InventoryCard extends StatelessWidget {
                   ],
                 ),
                 // Dynamically generate rows based on the items list
-                for (var item in items)
+                for (var item in widget.items)
                   TableRow(
                     children: [
                       _buildClickableTableCell(item.itemName, item, context),
@@ -62,7 +67,6 @@ class InventoryCard extends StatelessWidget {
     );
   }
 
-  // Helper method to build clickable table cells
   Widget _buildClickableTableCell(
       String text, StoreItem item, BuildContext context) {
     return InkWell(
@@ -82,13 +86,12 @@ class InventoryCard extends StatelessWidget {
               padding: EdgeInsets.all(20),
               onPressed: () {
                 FirebaseDatabase.deleteItem(item.itemName);
-                Navigator.pop(context);
+                Navigator.pop(context); // Close the dialog
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Deleted successfully")),
                 );
               },
               text: 'Delete',
-              iconData: Icons.done,
               color: Colors.red,
               textStyle: const TextStyle(color: Colors.white),
               iconColor: Colors.white,
@@ -97,9 +100,15 @@ class InventoryCard extends StatelessWidget {
               padding: EdgeInsets.all(20),
               onPressed: () {
                 Navigator.pop(context);
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => AddStoreItems(
+                      store_item: item,
+                    ),
+                  ),
+                );
               },
-              text: 'Cancel',
-              iconData: Icons.close,
+              text: 'Update',
               color: Colors.blue,
               textStyle: const TextStyle(color: Colors.white),
               iconColor: Colors.white,

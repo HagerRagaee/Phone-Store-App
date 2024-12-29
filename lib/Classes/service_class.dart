@@ -4,7 +4,7 @@ class ServiceRecord {
   final String phoneNumber;
   final double money;
   final String serviceType;
-  final double cost; // New cost field
+  final double cost;
   DateTime? serviceDate;
 
   ServiceRecord({

@@ -1,11 +1,21 @@
+// ignore_for_file: unnecessary_import
+
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
-import 'package:phone_store/Classes/sales_class.dart';
-import 'package:phone_store/Classes/service_class.dart';
-import 'package:phone_store/Data/data_sales_layer.dart';
-import 'package:phone_store/Data/data_service_layer.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:lottie/lottie.dart';
+import 'package:material_dialogs/dialogs.dart';
+import 'package:material_dialogs/widgets/buttons/icon_button.dart';
+import 'package:phone_store/Functions/sales_function.dart';
+import 'package:phone_store/Statemangement/Cubit/Sales_Cubit/sales_cubit.dart';
+import 'package:phone_store/Statemangement/Cubit/Sales_Cubit/sales_state.dart';
+import 'package:phone_store/Statemangement/Cubit/Service_Cubit/service_cubit.dart';
+import 'package:phone_store/Statemangement/Cubit/Service_Cubit/service_state.dart';
+import 'package:phone_store/structure/auth_button_builder.dart';
 import 'package:phone_store/structure/sales_card.dart';
 import 'package:phone_store/structure/sales_excel_builder.dart';
+import 'package:phone_store/structure/service_card.dart';
+import 'package:provider/provider.dart';
 
 class ShowTodaysSales extends StatefulWidget {
   const ShowTodaysSales({super.key});
@@ -15,49 +25,13 @@ class ShowTodaysSales extends StatefulWidget {
 }
 
 class _ShowTodaysSalesState extends State<ShowTodaysSales> {
-  List<SaleRecord> _items = [];
-  List<ServiceRecord> _services = [];
-
   List<DateTime?> _selectedDates = [];
 
   @override
   void initState() {
     super.initState();
-    fetchTodaySales();
-    fetchTodayService(); // Fetch today's sales on init
-  }
-
-  Future<void> fetchTodaySales() async {
-    try {
-      final items = await FirebaseOperations.getTodaySales();
-      setState(() {
-        _items = items;
-      });
-    } catch (e) {
-      print('Error fetching items: $e');
-    }
-  }
-
-  Future<void> fetchTodayService() async {
-    try {
-      final services = await DataServiceLayer.getTodayServices();
-      setState(() {
-        _services = services;
-      });
-    } catch (e) {
-      print('Error fetching items: $e');
-    }
-  }
-
-  Future<void> fetchSalesForDates(List<DateTime?> dates) async {
-    try {
-      final items = await FirebaseOperations.getSalesByDate(dates);
-      setState(() {
-        _items = items;
-      });
-    } catch (e) {
-      print('Error fetching sales for selected dates: $e');
-    }
+    BlocProvider.of<SalesCubit>(context).fetchTodaySales();
+    BlocProvider.of<ServiceCubit>(context).fetchTodayService();
   }
 
   @override
@@ -67,8 +41,11 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
         actions: [
           IconButton(
             onPressed: () {
-              if (_items.isNotEmpty || _services.isNotEmpty) {
-                SalesToExcel.createExcelFile(_items, _services);
+              if (BlocProvider.of<SalesCubit>(context).items.isNotEmpty ||
+                  BlocProvider.of<ServiceCubit>(context).services.isNotEmpty) {
+                SalesToExcel.createExcelFile(
+                    BlocProvider.of<SalesCubit>(context).items,
+                    BlocProvider.of<ServiceCubit>(context).services);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('No data to export!')),
@@ -83,7 +60,7 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
         ],
         title: Center(
           child: Text(
-            'Daily Sales Report',
+            'تقرير المبيعات اليوميه',
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -97,10 +74,11 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
         children: [
           ListTile(
             title: Text(
-              "Selected Dates: ${_selectedDates.isEmpty ? '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}' : _selectedDates.map((date) => date!.toLocal().toString().split(' ')[0]).join(', ')}",
+              "التاريخ المحدد : ${_selectedDates.isEmpty ? '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}' : _selectedDates.map((date) => date!.toLocal().toString().split(' ')[0]).join(', ')}",
               style: TextStyle(fontSize: 19),
+              textDirection: TextDirection.rtl,
             ),
-            trailing: IconButton(
+            leading: IconButton(
               onPressed: () async {
                 var results = await showCalendarDatePicker2Dialog(
                   context: context,
@@ -111,27 +89,116 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
                 );
                 if (results != null && results.isNotEmpty) {
                   setState(() {
-                    _selectedDates = results; // Update selected dates
+                    _selectedDates = results;
                   });
-                  await fetchSalesForDates(_selectedDates);
+                  await BlocProvider.of<SalesCubit>(context)
+                      .fetchSalesForDates(_selectedDates);
+                  context
+                      .read<ServiceCubit>()
+                      .fetchServicesForDates(_selectedDates);
                 }
               },
               icon: Icon(Icons.date_range),
             ),
           ),
           Expanded(
-            child: _items.isEmpty
-                ? Center(
-                    child: Text("No sales records found."),
-                  )
-                : ListView(
-                    children: [
-                      SalesCard(items: _items),
-                      SizedBox(height: 60),
-                    ],
-                  ),
-          ),
+            child: BlocBuilder<SalesCubit, SalesState>(
+              builder: (context, salesState) {
+                return BlocBuilder<ServiceCubit, ServiceState>(
+                  builder: (context, serviceState) {
+                    if (BlocProvider.of<SalesCubit>(context).items.isEmpty &&
+                        BlocProvider.of<ServiceCubit>(context)
+                            .services
+                            .isEmpty) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+
+                    if (BlocProvider.of<SalesCubit>(context).items.isNotEmpty &&
+                        BlocProvider.of<ServiceCubit>(context)
+                            .services
+                            .isEmpty) {
+                      return ListView(
+                        children: [
+                          SalesCard(),
+                          SizedBox(height: 40),
+                          CalculateTotalSales(),
+                        ],
+                      );
+                    }
+                    if (BlocProvider.of<ServiceCubit>(context)
+                            .services
+                            .isNotEmpty &&
+                        (BlocProvider.of<SalesCubit>(context).items.isEmpty)) {
+                      return ListView(
+                        children: [
+                          ServiceCard(),
+                          SizedBox(height: 40),
+                          CalculateTotalSales(),
+                        ],
+                      );
+                    }
+
+                    return ListView(
+                      children: [
+                        SalesCard(),
+                        SizedBox(height: 40),
+                        ServiceCard(),
+                        SizedBox(height: 60),
+                        CalculateTotalSales(),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          )
         ],
+      ),
+    );
+  }
+}
+
+class CalculateTotalSales extends StatefulWidget {
+  CalculateTotalSales({super.key});
+
+  @override
+  State<CalculateTotalSales> createState() => _CalculateTotalSalesState();
+}
+
+class _CalculateTotalSalesState extends State<CalculateTotalSales> {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ButtonBuilder(
+        buttonName: "مبيعات اليوم",
+        click: () async {
+          double totalSales = calculateTotalSales(context);
+
+          Dialogs.materialDialog(
+            dialogWidth: 300,
+            color: Colors.white,
+            msg: 'اجمالي مبيعات: ${totalSales.toStringAsFixed(2)}',
+            title: 'Daily Sales',
+            lottieBuilder: LottieBuilder.asset(
+              'images/profit2.json',
+              fit: BoxFit.contain,
+            ),
+            context: context,
+            actions: [
+              IconsButton(
+                padding: EdgeInsets.all(20),
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                text: 'OK',
+                iconData: Icons.done,
+                color: Colors.blue,
+                textStyle: const TextStyle(color: Colors.white),
+                iconColor: Colors.white,
+              ),
+            ],
+          );
+        },
       ),
     );
   }

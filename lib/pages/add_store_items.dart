@@ -1,3 +1,5 @@
+// ignore_for_file: must_be_immutable, non_constant_identifier_names
+
 import 'package:flutter/material.dart';
 import 'package:phone_store/Classes/store_item_class.dart';
 import 'package:phone_store/Data/data_inventory_layer.dart';
@@ -5,25 +7,30 @@ import 'package:phone_store/structure/button_builder.dart';
 import 'package:phone_store/structure/input_box.dart';
 
 class AddStoreItems extends StatefulWidget {
-  const AddStoreItems({super.key});
+  AddStoreItems({super.key, StoreItem? store_item}) {
+    if (store_item != null) {
+      typeController.text = store_item.itemName;
+      quantityController.text = store_item.quantity.toString();
+      costController.text = store_item.itemCost.toString();
+    }
+  }
+
+  TextEditingController typeController = TextEditingController();
+  TextEditingController quantityController = TextEditingController();
+  TextEditingController costController = TextEditingController();
 
   @override
   State<AddStoreItems> createState() => _AddStoreItemsState();
 }
 
 class _AddStoreItemsState extends State<AddStoreItems> {
-  TextEditingController typeController = TextEditingController();
-  TextEditingController quantityController = TextEditingController();
-  TextEditingController costController = TextEditingController();
-  TextEditingController priceController = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Center(
           child: Text(
-            'Add Store Items',
+            'اضف الى المخزن',
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -42,15 +49,15 @@ class _AddStoreItemsState extends State<AddStoreItems> {
             children: [
               InputBox(
                 fieldName: "التكلفه",
-                controller: costController,
+                controller: widget.costController,
               ),
               InputBox(
                 fieldName: "العدد",
-                controller: quantityController,
+                controller: widget.quantityController,
               ),
               InputBox(
                 fieldName: "الصنف",
-                controller: typeController,
+                controller: widget.typeController,
               ),
             ],
           ),
@@ -58,10 +65,9 @@ class _AddStoreItemsState extends State<AddStoreItems> {
           ButtonBuilder(
             buttonName: "أضف/عدل ألى المخزن",
             onPressed: () {
-              String type = typeController.text;
-              int? quantity = int.tryParse(quantityController.text);
-              // double? price = double.tryParse(priceController.text);
-              double? cost = double.tryParse(costController.text);
+              String type = widget.typeController.text;
+              int? quantity = int.tryParse(widget.quantityController.text);
+              double? cost = double.tryParse(widget.costController.text);
 
               if (type.isEmpty || quantity == null || cost == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -73,10 +79,9 @@ class _AddStoreItemsState extends State<AddStoreItems> {
               StoreItem newItem = StoreItem(type, cost, quantity);
               FirebaseDatabase.saveOrUpdateStore(newItem);
 
-              typeController.clear();
-              quantityController.clear();
-              costController.clear();
-              priceController.clear();
+              widget.typeController.clear();
+              widget.quantityController.clear();
+              widget.costController.clear();
 
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text("تم إضافة/تعديل الصنف بنجاح")),

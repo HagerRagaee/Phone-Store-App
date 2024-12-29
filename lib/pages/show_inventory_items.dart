@@ -54,7 +54,7 @@ class _ShowInventoryItemsState extends State<ShowInventoryItems> {
         ],
         title: Center(
           child: Text(
-            'Inventory Items',
+            'المخزن',
             style: TextStyle(
               color: Colors.white,
               fontSize: 24,

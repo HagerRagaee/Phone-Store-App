@@ -12,16 +12,14 @@ class InventoryToExcel {
     final Workbook workbook = Workbook();
     final Worksheet sheet = workbook.worksheets[0];
 
-    // Create a style with a yellow background for the header
     final Style headerStyle = workbook.styles.add('headerStyle');
-    headerStyle.backColor = '#FFFF00'; // Yellow color
+    headerStyle.backColor = '#FFFF00';
 
-    // Create styles for alternating row colors
     final Style greyRowStyle = workbook.styles.add('greyRowStyle');
-    greyRowStyle.backColor = '#D3D3D3'; // Light grey color
+    greyRowStyle.backColor = '#D3D3D3';
 
     final Style lightGreyRowStyle = workbook.styles.add('lightGreyRowStyle');
-    lightGreyRowStyle.backColor = '#F0F0F0'; // Lighter grey color
+    lightGreyRowStyle.backColor = '#F0F0F0';
 
     // Set headers with the style
     sheet.getRangeByName('S2').setText('الصنف'); // Item Name

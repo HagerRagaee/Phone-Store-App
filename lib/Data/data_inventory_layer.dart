@@ -46,7 +46,6 @@ class FirebaseDatabase {
     }
   }
 
-  // Search for a store item by name
   static Future<StoreItem?> searchStoreByName(String itemName) async {
     try {
       DocumentSnapshot docSnapshot =
@@ -111,8 +110,6 @@ class FirebaseDatabase {
     try {
       StoreItem? storeItem = await searchStoreByName(productName);
       if (storeItem != null) {
-        // Ensure quantity doesn't go below zero
-
         storeItem.quantity = back
             ? (storeItem.quantity + quantity).clamp(0, double.infinity).toInt()
             : (storeItem.quantity - quantity).clamp(0, double.infinity).toInt();
@@ -135,4 +132,10 @@ class FirebaseDatabase {
       print("Error deleting wallet: $e");
     }
   }
+
+  // static Future<void> updateItem(StoreItem storeItem) async {
+  //   DocumentSnapshot docSnapshot =
+  //         await db.collection(collectionName).doc(storeItem.itemName).get();
+
+  // }
 }

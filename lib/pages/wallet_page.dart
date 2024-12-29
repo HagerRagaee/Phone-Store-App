@@ -57,7 +57,7 @@ class _WalletPageState extends State<WalletPage> {
           } else if (snapshot.hasError) {
             return Center(child: Text('خطأ: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('لا توجد محافظ.'));
+            return const Center(child: CircularProgressIndicator());
           }
 
           final walletList = snapshot.data!;

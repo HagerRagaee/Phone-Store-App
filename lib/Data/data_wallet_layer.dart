@@ -8,31 +8,26 @@ class DataWalletLayer {
 
   static Future<void> addWallet(WalletData wallet) async {
     DocumentReference docRef =
-        await firebaseFirestore.collection(collectionName).add(wallet.tojson());
+        await firebaseFirestore.collection(collectionName).add(wallet.toJson());
 
     String docId = docRef.id;
     docRef.update({"docId": docId});
   }
 
   static Future<List<WalletData>> getAllWallet() async {
-    List<WalletData> walletList = [];
-
     QuerySnapshot snapshot =
         await firebaseFirestore.collection(collectionName).get();
-    walletList = snapshot.docs.map((doc) {
-      return WalletData.fromjson(
+
+    return snapshot.docs.map((doc) {
+      return WalletData.fromJson(
         doc.data() as Map<String, dynamic>,
         docId: doc.id,
       );
     }).toList();
-
-    return walletList;
   }
 
   static Future<WalletData?> getWalletById(String id) async {
     try {
-      print("Querying for Wallet with ID: $id");
-
       QuerySnapshot snapshot = await firebaseFirestore
           .collection(collectionName)
           .where('phoneNumber', isEqualTo: id)
@@ -45,9 +40,7 @@ class DataWalletLayer {
       }
 
       var doc = snapshot.docs.first;
-      print("Found Wallet: ${doc.data()}");
-
-      return WalletData.fromjson(
+      return WalletData.fromJson(
         doc.data() as Map<String, dynamic>,
         docId: doc.id,
       );
@@ -57,50 +50,75 @@ class DataWalletLayer {
     }
   }
 
-  static Future<String?> getWalletDocId(String id) async {
+  static Future<void> updateWallet(String id, double amount, double cost,
+      String type, BuildContext context) async {
     try {
       WalletData? wallet = await getWalletById(id);
-      print("doc id is : ${wallet!.docId}");
-      return wallet.docId;
-    } catch (e) {
-      print("Error in getWalletById: $e");
-      return null;
-    }
-  }
 
-  static Future<void> updateWallet(
-      String id, double amount, String type, BuildContext context) async {
-    try {
-      WalletData? wallet = await getWalletById(id);
-      print("doc id is : ${wallet!.docId}");
+      if (wallet == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("المحفظه غير موجودة")),
+        );
+        return;
+      }
 
       double currentAmount = wallet.walletAmount ?? 0;
       double currentLimit = wallet.walletLimit ?? 0;
 
       if (type == "سحب") {
         if (currentAmount >= amount) {
-          wallet.walletAmount = currentAmount + amount;
+          wallet.walletAmount = currentAmount + (amount - cost);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("balance not enough")),
+            const SnackBar(content: Text("الرصيد غير كافي")),
           );
-          print("Insufficient balance for withdrawal.");
           return;
         }
       } else {
-        // Deposit case
-        wallet.walletAmount = currentAmount - amount;
-        wallet.walletLimit = currentLimit - amount;
+        wallet.walletAmount = currentAmount - (amount - cost);
+        wallet.walletLimit = currentLimit - (amount - cost);
       }
 
-      await FirebaseFirestore.instance
+      await firebaseFirestore
           .collection(collectionName)
           .doc(wallet.docId)
-          .set(wallet.tojson());
+          .set(wallet.toJson());
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Transaction successful")),
+        SnackBar(content: Text("تمت عمليه $type بنجاح")),
       );
+    } catch (e) {
+      print("Error updating wallet: $e");
+    }
+  }
+
+  static Future<void> returnWalletAmount(String id, double amount, double cost,
+      String type, BuildContext context) async {
+    try {
+      WalletData? wallet = await getWalletById(id);
+
+      if (wallet == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("المحفظه غير موجودة")),
+        );
+        return;
+      }
+
+      double currentAmount = wallet.walletAmount ?? 0;
+      double currentLimit = wallet.walletLimit ?? 0;
+
+      if (type == "سحب") {
+        wallet.walletAmount = currentAmount - (amount - cost);
+      } else {
+        wallet.walletAmount = currentAmount + (amount - cost);
+        wallet.walletLimit = currentLimit + (amount - cost);
+        print("${type} + ${wallet.walletAmount}");
+      }
+
+      await firebaseFirestore
+          .collection(collectionName)
+          .doc(wallet.docId)
+          .set(wallet.toJson());
     } catch (e) {
       print("Error updating wallet: $e");
     }
@@ -113,6 +131,31 @@ class DataWalletLayer {
       print("Wallet with docId $docId has been successfully deleted.");
     } catch (e) {
       print("Error deleting wallet: $e");
+    }
+  }
+
+  static Future<void> resetWalletLimitsIfNeeded() async {
+    try {
+      List<WalletData> wallets = await getAllWallet();
+      DateTime now = DateTime.now();
+
+      for (WalletData wallet in wallets) {
+        if (wallet.lastResetDate == null ||
+            wallet.lastResetDate!.month != now.month ||
+            wallet.lastResetDate!.year != now.year) {
+          wallet.walletLimit = 200000.0;
+          wallet.lastResetDate = now;
+
+          await firebaseFirestore
+              .collection(collectionName)
+              .doc(wallet.docId)
+              .set(wallet.toJson());
+        }
+      }
+
+      print("Wallet limits reset if needed.");
+    } catch (e) {
+      print("Error resetting wallet limits: $e");
     }
   }
 }

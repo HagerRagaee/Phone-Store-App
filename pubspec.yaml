@@ -28,44 +28,53 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  flutter:
-    sdk: flutter
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  provider: ^6.1.2
-  shared_preferences: ^2.3.3
-  excel: ^4.0.6
-  path_provider: ^2.1.5
-  syncfusion_flutter_xlsio: ^27.2.4
-  open_file: ^3.2.1
-  universal_html: ^2.2.4
+  calendar_date_picker2: ^1.1.7
   cloud_firestore: ^5.4.0
-  firebase_storage: ^12.2.0
+  convex_bottom_bar: ^3.2.0
+  cupertino_icons: ^1.0.8
+  excel: ^4.0.6
+  firebase_auth: ^5.3.4
   firebase_core: ^3.4.0
   firebase_messaging: ^15.1.0
+  firebase_storage: ^12.2.0
+  flutter:
+    sdk: flutter
+  flutter_bloc: ^8.1.6
+  flutter_launcher_icons: ^0.14.2
   google_sign_in: ^6.2.1
-  material_dialogs: ^1.1.5
   lottie: ^3.2.0
-  calendar_date_picker2: ^1.1.7
+  material_dialogs: ^1.1.5
+  open_file: ^3.2.1
+  path_provider: ^2.1.5
+  provider: ^6.1.2
+  shared_preferences: ^2.3.3
   step_progress_indicator: ^1.0.2
- 
+  syncfusion_flutter_xlsio: ^27.2.4
+  universal_html: ^2.2.4
+  workmanager: ^0.5.2
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "images/icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_forground: "images/icon.png"
+  web:
+    generate: true
+    image_path: "images/icon.png"
+    background_color: "#hexcode"
+    theme_color: "#hexcode"
+    adaptive_icon_background: "#ffffff"
+    adaptive_icon_forground: "images/icon.png"
 
 dev_dependencies:
+  flutter_lints: ^5.0.0
   flutter_test:
     sdk: flutter
 
-  # The "flutter_lints" package below contains a set of recommended lints to
-  # encourage good coding practices. The lint set provided by the package is
-  # activated in the `analysis_options.yaml` file located at the root of your
-  # package. See that file for information about deactivating specific lint
-  # rules and activating additional ones.
-  flutter_lints: ^5.0.0
-
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
 # The following section is specific to Flutter packages.
 flutter:
 
@@ -78,13 +87,10 @@ flutter:
   assets:
     - images/
   #   - images/a_dot_ham.jpeg
-
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
-
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
-
   # To add custom fonts to your application, add a fonts section here,
   # in this "flutter" section. Each entry in this list should have a
   # "family" key with the font family name, and a "fonts" key with a

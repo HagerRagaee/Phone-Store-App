@@ -130,6 +130,7 @@ class _AddServiceState extends State<AddService> {
 
                   typeController.clear();
                   numberController.clear();
+                  balanceController.clear();
 
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("تم إضافة/تعديل المحفظه بنجاح")),

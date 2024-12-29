@@ -1,163 +1,245 @@
+// ignore_for_file: must_be_immutable
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phone_store/Classes/service_class.dart';
-import 'package:phone_store/Classes/wallet_class.dart';
-import 'package:phone_store/Data/data_service_layer.dart';
 import 'package:phone_store/Data/data_wallet_layer.dart';
-import 'package:phone_store/pages/wallet_page.dart';
+import 'package:phone_store/Statemangement/Cubit/Service_Cubit/service_cubit.dart';
 import 'package:phone_store/structure/button_builder.dart';
 import 'package:phone_store/structure/input_box.dart';
 
-Widget serviceBuilder(BuildContext context) {
-  TextEditingController numberController = TextEditingController();
-  TextEditingController typeController = TextEditingController();
-  TextEditingController amountController = TextEditingController();
-  TextEditingController costController = TextEditingController();
-  Future<List<WalletData>> wallet = DataWalletLayer.getAllWallet();
-  List<String> phoneNumbers = [];
-
-  Future<void> getPhoneNumbers() async {
-    List<WalletData> walletDataList = await wallet;
-    for (var walletData in walletDataList) {
-      phoneNumbers.add(walletData.phoneNumber);
+class ServiceBuilder extends StatelessWidget {
+  ServiceBuilder({super.key, this.service}) {
+    if (service != null) {
+      typeController.text = service!.serviceType;
+      numberController.text = service!.phoneNumber;
+      amountController.text = service!.money.toString();
+      costController.text = service!.cost.toString();
     }
   }
 
-  return Padding(
-    padding: const EdgeInsets.all(10.0),
-    child: Stack(
-      children: [
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  final ServiceRecord? service;
+
+  final TextEditingController numberController = TextEditingController();
+  final TextEditingController typeController = TextEditingController();
+  final TextEditingController amountController = TextEditingController();
+  final TextEditingController costController = TextEditingController();
+
+  Future<List<String>> getPhoneNumbers() async {
+    final walletDataList = await DataWalletLayer.getAllWallet();
+    return walletDataList.map((wallet) => wallet.phoneNumber).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: service != null
+          ? AppBar(
+              backgroundColor: Colors.blueAccent,
+              title: Center(
+                  child: Text(
+                "تعديل خدمة",
+                style: TextStyle(color: Colors.white),
+              )),
+            )
+          : AppBar(),
+      body: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: Stack(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              crossAxisAlignment: CrossAxisAlignment.end,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                InputBox(
-                  fieldName: "نوع الخدمة",
-                  controller: typeController,
-                  drop: true,
-                  items: ["سحب", " إيداع"],
-                ),
-                // Add drop-down list for phone numbers
-                FutureBuilder(
-                  future: getPhoneNumbers(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return CircularProgressIndicator();
-                    } else if (snapshot.hasError) {
-                      return Text("Error loading phone numbers");
-                    } else {
-                      return InputBox(
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    InputBox(
+                      fieldName: "نوع الخدمة",
+                      controller: typeController,
+                      items: ["سحب", "إيداع"],
+                    ),
+                    if (numberController.text.isEmpty)
+                      FutureBuilder<List<String>>(
+                        future: getPhoneNumbers(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const CircularProgressIndicator();
+                          } else if (snapshot.hasError) {
+                            return const Text("Error loading phone numbers");
+                          } else if (snapshot.data == null ||
+                              snapshot.data!.isEmpty) {
+                            return const Text("No phone numbers available");
+                          } else {
+                            return InputBox(
+                              fieldName: "رقم المحفظة",
+                              controller: numberController,
+                              drop: true,
+                              items: snapshot.data!,
+                            );
+                          }
+                        },
+                      )
+                    else
+                      InputBox(
                         fieldName: "رقم المحفظة",
                         controller: numberController,
-                        drop: true,
-                        items: phoneNumbers,
-                      );
-                    }
-                  },
-                ),
-              ],
-            ),
-            SizedBox(
-              height: 30,
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                InputBox(
-                  fieldName: "التكلفه",
-                  controller: costController,
-                ),
-                InputBox(
-                  fieldName: " المبلغ المحول",
-                  controller: amountController,
-                ),
-              ],
-            ),
-            const SizedBox(
-              height: 50,
-            ),
-            ButtonBuilder(
-              buttonName: "سحب/إيداع",
-              onPressed: () async {
-                String type = typeController.text.trim();
-                String quantityText = amountController.text.trim();
-
-                if (type.isEmpty || quantityText.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("الرجاء إدخال جميع الحقول بشكل صحيح"),
-                    ),
-                  );
-                  return;
-                }
-
-                int? quantity = int.tryParse(quantityText);
-                if (quantity == null || quantity <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("الرجاء إدخال المبلغ المطلوب"),
-                    ),
-                  );
-                  return;
-                }
-
-                try {
-                  String phone = numberController.text.trim();
-
-                  if (!phoneNumbers.contains(phone)) {
-                    print("wallet not found");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("رقم المحفظة غير موجود"),
+                        items: [],
                       ),
-                    );
-                    return;
-                  }
-
-                  ServiceRecord serviceRecord = ServiceRecord(
-                    cost: double.tryParse(costController.text) ?? 0.0,
-                    money: double.tryParse(amountController.text) ?? 0.0,
-                    phoneNumber: phone,
-                    serviceType: typeController.text,
-                    walletId: numberController.text,
-                  );
-
-                  DataServiceLayer.addService(serviceRecord, context);
-                  DataWalletLayer.updateWallet(numberController.text,
-                      serviceRecord.money, serviceRecord.serviceType, context);
-
-                  typeController.clear();
-                  numberController.clear();
-                  amountController.clear();
-                  costController.clear();
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("خطأ: ${e.toString()}"),
+                  ],
+                ),
+                const SizedBox(height: 30),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    InputBox(
+                      fieldName: "التكلفة",
+                      controller: costController,
                     ),
-                  );
-                }
-              },
+                    InputBox(
+                      fieldName: "المبلغ المحول",
+                      controller: amountController,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 50),
+                ButtonBuilder(
+                  buttonName: "سحب/إيداع",
+                  onPressed: () => service != null
+                      ? _handleServiceUpdate(context, service!)
+                      : _handleServiceAction(context),
+                ),
+              ],
             ),
           ],
         ),
-        Align(
-          alignment: Alignment.bottomRight,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => WalletPage()));
-              },
-              child: const Icon(Icons.wallet),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
+
+  Future<void> _handleServiceAction(BuildContext context) async {
+    String type = typeController.text.trim();
+    String phoneNumber = numberController.text.trim();
+    String amountText = amountController.text.trim();
+    String costText = costController.text.trim();
+
+    if (type.isEmpty ||
+        phoneNumber.isEmpty ||
+        amountText.isEmpty ||
+        costText.isEmpty) {
+      _showSnackBar(context, "الرجاء إدخال جميع الحقول بشكل صحيح");
+      return;
+    }
+
+    final amount = double.tryParse(amountText);
+    final cost = double.tryParse(costText);
+
+    if (amount == null || amount <= 0) {
+      _showSnackBar(context, "الرجاء إدخال مبلغ صالح");
+      return;
+    }
+
+    final wallet = await DataWalletLayer.getWalletById(phoneNumber);
+
+    if (wallet == null) {
+      _showSnackBar(context, "رقم المحفظة غير موجود");
+      return;
+    }
+
+    if (type == "إيداع" && (wallet.walletLimit ?? 200000.0) < amount) {
+      _showSnackBar(context, "المبلغ الإجمالي سيتجاوز الحد الأقصى");
+      return;
+    }
+
+    try {
+      final serviceRecord = ServiceRecord(
+        cost: cost ?? 0.0,
+        money: amount,
+        phoneNumber: phoneNumber,
+        serviceType: type,
+        walletId: phoneNumber,
+      );
+
+      BlocProvider.of<ServiceCubit>(context).addService(serviceRecord, context);
+      await DataWalletLayer.updateWallet(
+          phoneNumber, amount, cost ?? 0.0, type, context);
+
+      _clearFields();
+    } catch (e) {
+      _showSnackBar(context, "خطأ: ${e.toString()}");
+    }
+  }
+
+  Future<void> _handleServiceUpdate(
+      BuildContext context, ServiceRecord service) async {
+    String type = typeController.text.trim();
+    String phoneNumber = numberController.text.trim();
+    String amountText = amountController.text.trim();
+    String costText = costController.text.trim();
+
+    if (type.isEmpty ||
+        phoneNumber.isEmpty ||
+        amountText.isEmpty ||
+        costText.isEmpty) {
+      _showSnackBar(context, "الرجاء إدخال جميع الحقول بشكل صحيح");
+      return;
+    }
+
+    final amount = double.tryParse(amountText);
+    final cost = double.tryParse(costText);
+
+    if (amount == null || amount <= 0) {
+      _showSnackBar(context, "الرجاء إدخال مبلغ صالح");
+      return;
+    }
+
+    final wallet = await DataWalletLayer.getWalletById(phoneNumber);
+
+    if (wallet == null) {
+      _showSnackBar(context, "رقم المحفظة غير موجود");
+      return;
+    }
+
+    if (type == "إيداع" && (wallet.walletLimit ?? 200000.0) < amount) {
+      _showSnackBar(context, "المبلغ الإجمالي سيتجاوز الحد الأقصى");
+      return;
+    }
+
+    try {
+      final serviceRecord = ServiceRecord(
+        cost: cost ?? 0.0,
+        money: amount,
+        phoneNumber: phoneNumber,
+        serviceType: type,
+        walletId: phoneNumber,
+      );
+
+      await BlocProvider.of<ServiceCubit>(context)
+          .removeService(service.docId!, context);
+
+      await BlocProvider.of<ServiceCubit>(context)
+          .addService(serviceRecord, context);
+
+      await DataWalletLayer.updateWallet(
+          phoneNumber, amount, cost ?? 0.0, type, context);
+
+      _clearFields();
+    } catch (e) {
+      _showSnackBar(context, "خطأ: ${e.toString()}");
+    }
+  }
+
+  void _clearFields() {
+    typeController.clear();
+    numberController.clear();
+    amountController.clear();
+    costController.clear();
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
+  }
 }
