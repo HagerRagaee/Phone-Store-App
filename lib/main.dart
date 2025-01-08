@@ -1,11 +1,17 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:phone_store/Data/data_wallet_layer.dart';
-import 'package:phone_store/Statemangement/Cubit/Sales_Cubit/sales_cubit.dart';
-import 'package:phone_store/Statemangement/Cubit/Service_Cubit/service_cubit.dart';
-import 'package:phone_store/Statemangement/provider_store_class.dart';
-import 'package:phone_store/pages/home_page.dart';
+import 'package:phone_store/Functions/tabs_navigator.dart';
+import 'package:phone_store/app_route.dart';
+import 'package:phone_store/bussines_logic/Cubit/Wallet_Cubit/wallet_cubit.dart';
+import 'package:phone_store/data/firebase_data/data_sales_layer.dart';
+import 'package:phone_store/data/firebase_data/data_service_layer.dart';
+import 'package:phone_store/data/repository/sales_repository.dart';
+import 'package:phone_store/data/repository/service_repository.dart';
+import 'package:phone_store/data/repository/wallet_repository.dart';
+import 'data/firebase_data/data_wallet_layer.dart';
+import 'bussines_logic/Cubit/Sales_Cubit/sales_cubit.dart';
+import 'bussines_logic/Cubit/Service_Cubit/service_cubit.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
@@ -18,7 +24,12 @@ void main() async {
       projectId: 'phone-store-f967b',
     ),
   );
-  await DataWalletLayer.resetWalletLimitsIfNeeded();
+
+  final DataWalletLayer dataWalletLayer = DataWalletLayer();
+  final FirebaseOperations firebaseOperations = FirebaseOperations();
+  final DataServiceLayer dataServiceLayer = DataServiceLayer();
+
+  await dataWalletLayer.resetWalletLimitsIfNeeded();
 
   runApp(
     MultiProvider(
@@ -27,24 +38,40 @@ void main() async {
           create: (context) => ProvStore(),
         ),
       ],
-      child: const MyApp(), // Move the child here.
+      child: PhoneApp(
+        route: AppRoute(),
+        repository: SalesRepository(firebaseOperations),
+        serviceRepository: ServiceRepository(dataServiceLayer),
+        walletRepository: WalletRepository(dataWalletLayer),
+      ),
     ),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class PhoneApp extends StatelessWidget {
+  const PhoneApp(
+      {super.key,
+      required this.route,
+      required this.repository,
+      required this.serviceRepository,
+      required this.walletRepository});
+
+  final AppRoute route;
+  final SalesRepository repository;
+  final ServiceRepository serviceRepository;
+  final WalletRepository walletRepository;
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => ServiceCubit()),
-        BlocProvider(create: (_) => SalesCubit()),
+        BlocProvider(create: (_) => ServiceCubit(serviceRepository)),
+        BlocProvider(create: (_) => SalesCubit(repository)),
+        BlocProvider(create: (_) => WalletCubit(walletRepository)),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        home: HomePage(),
+        onGenerateRoute: route.generateRoutes,
       ),
     );
   }

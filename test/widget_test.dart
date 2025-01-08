@@ -7,13 +7,26 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phone_store/app_route.dart';
+import 'package:phone_store/data/firebase_data/data_sales_layer.dart';
+import 'package:phone_store/data/firebase_data/data_service_layer.dart';
+import 'package:phone_store/data/firebase_data/data_wallet_layer.dart';
+import 'package:phone_store/data/repository/sales_repository.dart';
+import 'package:phone_store/data/repository/service_repository.dart';
+import 'package:phone_store/data/repository/wallet_repository.dart';
 
 import 'package:phone_store/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(PhoneApp(
+      route: AppRoute(),
+      repository: SalesRepository(FirebaseOperations as FirebaseOperations),
+      serviceRepository:
+          ServiceRepository(DataServiceLayer as DataServiceLayer),
+      walletRepository: WalletRepository(DataWalletLayer as DataWalletLayer),
+    ));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
