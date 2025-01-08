@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:phone_store/Functions/tabs_navigator.dart';
 import 'package:phone_store/app_route.dart';
+import 'package:phone_store/bussines_logic/Cubit/Balance_Cubit/balance_cubit.dart';
 import 'package:phone_store/bussines_logic/Cubit/Wallet_Cubit/wallet_cubit.dart';
+import 'package:phone_store/data/firebase_data/data_balance_layer.dart';
 import 'package:phone_store/data/firebase_data/data_sales_layer.dart';
 import 'package:phone_store/data/firebase_data/data_service_layer.dart';
+import 'package:phone_store/data/repository/balance_repository.dart';
 import 'package:phone_store/data/repository/sales_repository.dart';
 import 'package:phone_store/data/repository/service_repository.dart';
 import 'package:phone_store/data/repository/wallet_repository.dart';
@@ -28,6 +31,7 @@ void main() async {
   final DataWalletLayer dataWalletLayer = DataWalletLayer();
   final FirebaseOperations firebaseOperations = FirebaseOperations();
   final DataServiceLayer dataServiceLayer = DataServiceLayer();
+  final DataBalanceLayer dataBalanceLayer = DataBalanceLayer();
 
   await dataWalletLayer.resetWalletLimitsIfNeeded();
 
@@ -43,23 +47,27 @@ void main() async {
         repository: SalesRepository(firebaseOperations),
         serviceRepository: ServiceRepository(dataServiceLayer),
         walletRepository: WalletRepository(dataWalletLayer),
+        balanceRepository: BalanceRepository(dataBalanceLayer),
       ),
     ),
   );
 }
 
 class PhoneApp extends StatelessWidget {
-  const PhoneApp(
-      {super.key,
-      required this.route,
-      required this.repository,
-      required this.serviceRepository,
-      required this.walletRepository});
+  const PhoneApp({
+    super.key,
+    required this.route,
+    required this.repository,
+    required this.serviceRepository,
+    required this.walletRepository,
+    required this.balanceRepository,
+  });
 
   final AppRoute route;
   final SalesRepository repository;
   final ServiceRepository serviceRepository;
   final WalletRepository walletRepository;
+  final BalanceRepository balanceRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +76,7 @@ class PhoneApp extends StatelessWidget {
         BlocProvider(create: (_) => ServiceCubit(serviceRepository)),
         BlocProvider(create: (_) => SalesCubit(repository)),
         BlocProvider(create: (_) => WalletCubit(walletRepository)),
+        BlocProvider(create: (_) => BalanceCubit(balanceRepository)),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

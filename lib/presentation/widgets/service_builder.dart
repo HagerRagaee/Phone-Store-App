@@ -1,4 +1,4 @@
-// ignore_for_file: must_be_immutable
+// ignore_for_file: must_be_immutable, use_build_context_synchronously, unnecessary_brace_in_string_interps
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,7 +11,6 @@ import 'package:phone_store/presentation/widgets/input_box.dart';
 class ServiceBuilder extends StatelessWidget {
   ServiceBuilder({super.key, this.service}) {
     if (service != null) {
-      typeController.text = service!.serviceType;
       numberController.text = service!.phoneNumber;
       amountController.text = service!.money.toString();
       costController.text = service!.cost.toString();
@@ -58,6 +57,7 @@ class ServiceBuilder extends StatelessWidget {
                     InputBox(
                       fieldName: "نوع الخدمة",
                       controller: typeController,
+                      drop: true,
                       items: ["سحب", "إيداع"],
                     ),
                     if (numberController.text.isEmpty)
@@ -149,8 +149,8 @@ class ServiceBuilder extends StatelessWidget {
       return;
     }
 
-    if ((type == "إيداع" && (wallet.walletLimit!) < (amount - cost!)) ||
-        (type == "إيداع" && (wallet.walletAmount!) < (amount - cost!))) {
+    if ((type == "إيداع" && (wallet.walletLimit!) < (cost!)) ||
+        (type == "إيداع" && (wallet.walletAmount!) < (cost!))) {
       _showSnackBar(context, "المبلغ الإجمالي سيتجاوز الحد الأقصى");
       return;
     }

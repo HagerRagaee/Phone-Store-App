@@ -18,74 +18,90 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
+    // Get screen dimensions
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    // Dynamically adjust sizes
+    final iconSize = screenWidth * 0.022; // Adjust icon size
+    // final barHeight = screenHeight * 0.07; // Adjust AppBar height
+
+    // Pages for each tab
     final List<Widget> pages = [
       SellItem(),
-      ShowTodaysSales(),
+      const ShowTodaysSales(),
       AddStoreItems(),
-      ShowInventoryItems(),
-      WalletPage(),
+      const ShowInventoryItems(),
+      const WalletPage(),
     ];
 
-    return Scaffold(
-      bottomNavigationBar: ConvexAppBar(
-        style: TabStyle.react,
-        backgroundColor: const Color.fromARGB(255, 250, 248, 248),
-        activeColor: Colors.black,
-        height: 60,
-        top: -12,
-        items: [
-          TabItem(
-            icon: Icon(
-              Icons.sell,
-              color: Colors.purple,
-              size: 30,
-            ),
-            title: 'بيع',
+    return SafeArea(
+      child: Scaffold(
+        bottomNavigationBar: Padding(
+          padding:
+              const EdgeInsets.only(bottom: 5), // Add padding to avoid overflow
+          child: ConvexAppBar(
+            style: TabStyle.react,
+            backgroundColor: const Color.fromARGB(255, 250, 248, 248),
+            activeColor: Colors.black,
+            height: 60, // Reduce height to avoid overflow
+            top: -8, // Adjust position of the AppBar
+            items: [
+              TabItem(
+                icon: Icon(
+                  Icons.sell,
+                  color: Colors.purple,
+                  size: iconSize,
+                ),
+                title: 'بيع',
+              ),
+              TabItem(
+                icon: Icon(
+                  Icons.attach_money,
+                  color: Colors.purple,
+                  size: iconSize,
+                ),
+                title: 'المبيعات',
+              ),
+              TabItem(
+                icon: Icon(
+                  Icons.inventory,
+                  color: Colors.purple,
+                  size: iconSize,
+                ),
+                title: 'اضف الى المخزن',
+              ),
+              TabItem(
+                icon: Icon(
+                  Icons.store,
+                  color: Colors.purple,
+                  size: iconSize,
+                ),
+                title: 'المخزن',
+              ),
+              TabItem(
+                icon: Icon(
+                  Icons.wallet,
+                  color: Colors.purple,
+                  size: iconSize,
+                ),
+                title: 'المحافظ',
+              ),
+            ],
+            initialActiveIndex: Provider.of<ProvStore>(context).selectedIndex,
+            onTap: (index) {
+              Provider.of<ProvStore>(context, listen: false)
+                  .onTappedItem(index);
+            },
           ),
-          TabItem(
-            icon: Icon(
-              Icons.attach_money,
-              color: Colors.purple,
-              size: 30,
-            ),
-            title: 'المبيعات',
+        ),
+        body: Padding(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+          child: Consumer<ProvStore>(
+            builder: (context, prov, child) {
+              return pages[prov.selectedIndex];
+            },
           ),
-          TabItem(
-            icon: Icon(
-              Icons.inventory,
-              color: Colors.purple,
-              size: 30,
-            ),
-            title: 'اضف الى المخزن',
-          ),
-          TabItem(
-            icon: Icon(
-              Icons.store,
-              color: Colors.purple,
-              size: 30,
-            ),
-            title: 'المخزن',
-          ),
-          TabItem(
-            icon: Icon(
-              Icons.wallet,
-              color: Colors.purple,
-              size: 30,
-            ),
-            title: 'المحافظ',
-          ),
-        ],
-        initialActiveIndex: Provider.of<ProvStore>(context).selectedIndex,
-        onTap: (index) {
-          Provider.of<ProvStore>(context, listen: false).onTappedItem(index);
-        },
-      ),
-      body: Padding(
-        padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-        child: Consumer<ProvStore>(
-          builder: (context, prov, child) {
-            return pages[prov.selectedIndex];
-          },
         ),
       ),
     );

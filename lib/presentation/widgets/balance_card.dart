@@ -1,13 +1,15 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:lottie/lottie.dart';
 import 'package:material_dialogs/dialogs.dart';
 import 'package:material_dialogs/widgets/buttons/icon_button.dart';
-import '../../data/models/service_class.dart';
-import '../../bussines_logic/Cubit/Service_Cubit/service_cubit.dart';
-import 'package:phone_store/presentation/widgets/service_builder.dart';
+import 'package:phone_store/bussines_logic/Cubit/Balance_Cubit/balance_cubit.dart';
+import 'package:phone_store/data/models/balance_model.dart';
+import 'package:phone_store/presentation/widgets/balance_builder.dart';
 
-class ServiceCard extends StatelessWidget {
+class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -28,9 +30,9 @@ class ServiceCard extends StatelessWidget {
               child: Column(
                 children: [
                   _buildHeaderRow(context),
-                  for (var service
-                      in BlocProvider.of<ServiceCubit>(context).services)
-                    _buildDataRow(context, service),
+                  for (var balance
+                      in BlocProvider.of<BalanceCubit>(context).balanceRecordes)
+                    _buildDataRow(context, balance),
                 ],
               ),
             ),
@@ -46,16 +48,15 @@ class ServiceCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: _buildTableCell('الربح', isHeader: true)),
-          Expanded(child: _buildTableCell('المبلغ المدفوع', isHeader: true)),
-          Expanded(child: _buildTableCell('المبلغ المحول', isHeader: true)),
-          Expanded(child: _buildTableCell('نوع العمليه', isHeader: true)),
-          Expanded(child: _buildTableCell('رقم المحفظه', isHeader: true)),
+          Expanded(child: _buildTableCell("التكلفه", isHeader: true)),
+          Expanded(child: _buildTableCell("السعر", isHeader: true)),
+          Expanded(child: _buildTableCell('بيان', isHeader: true)),
         ],
       ),
     );
   }
 
-  Widget _buildDataRow(BuildContext context, ServiceRecord service) {
+  Widget _buildDataRow(BuildContext context, BalanceModel balance) {
     return InkWell(
       onTap: () {
         Dialogs.materialDialog(
@@ -73,8 +74,8 @@ class ServiceCard extends StatelessWidget {
               padding: EdgeInsets.all(20),
               onPressed: () async {
                 Navigator.pop(context);
-                bool removed = await BlocProvider.of<ServiceCubit>(context)
-                    .removeService(service.docId!, context);
+                bool removed = await BlocProvider.of<BalanceCubit>(context)
+                    .deleteBalanceRecord(balance.docId!, context);
                 if (removed) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -84,8 +85,7 @@ class ServiceCard extends StatelessWidget {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content:
-                          Text("خطأ: فشل حذف عمليه ال${service.serviceType}"),
+                      content: Text("خطأ: فشل حذف عمليه الحذف"),
                     ),
                   );
                 }
@@ -102,8 +102,8 @@ class ServiceCard extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => ServiceBuilder(
-                      service: service,
+                    builder: (context) => BalanceBuilder(
+                      balanceModel: balance,
                     ),
                   ),
                 );
@@ -119,13 +119,10 @@ class ServiceCard extends StatelessWidget {
       },
       child: Row(
         children: [
-          Expanded(
-              child:
-                  _buildTableCell((service.money - service.cost).toString())),
-          Expanded(child: _buildTableCell((service.money).toString())),
-          Expanded(child: _buildTableCell((service.cost).toString())),
-          Expanded(child: _buildTableCell(service.serviceType)),
-          Expanded(child: _buildTableCell(service.phoneNumber)),
+          Expanded(child: _buildTableCell((balance.profit).toString())),
+          Expanded(child: _buildTableCell((balance.cost).toString())),
+          Expanded(child: _buildTableCell((balance.price).toString())),
+          Expanded(child: _buildTableCell(balance.type)),
         ],
       ),
     );

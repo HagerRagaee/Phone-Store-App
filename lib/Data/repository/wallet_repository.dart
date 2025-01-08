@@ -23,6 +23,15 @@ class WalletRepository {
     }
   }
 
+  Future<List<WalletData>> searchWallet(String searchController) async {
+    try {
+      return await dataWalletLayer.searchWallet(searchController);
+    } catch (e) {
+      print('Error searching Wallets: $e');
+      return [];
+    }
+  }
+
   Future<WalletData?> getWalletById(String id) async {
     try {
       return await dataWalletLayer.getWalletById(id);
@@ -69,12 +78,20 @@ class WalletRepository {
     }
   }
 
-  // Future<List<String>> getPhoneNumbers(BuildContext context) async {
-  //   try {
-  //     return await dataWalletLayer.getPhoneNumbers(context);
-  //   } catch (e) {
-  //     print('Error fetching Wallets: $e');
-  //     return [];
-  //   }
-  // }
+  Future<void> updateWalletCounter(String docId, int currentCounter) async {
+    try {
+      await dataWalletLayer.updateWalletCounter(docId, currentCounter);
+    } catch (e) {
+      print('Error updating Wallet counter: $e');
+    }
+  }
+
+  Future<int> getWalletCounter(String docId) async {
+    try {
+      return await dataWalletLayer.getWalletCounter(docId);
+    } catch (e) {
+      print('Error fetching Wallet counter: $e');
+      return 0;
+    }
+  }
 }

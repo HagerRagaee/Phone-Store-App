@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print, unnecessary_brace_in_string_interps
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:phone_store/data/models/wallet_class.dart';
@@ -24,6 +26,17 @@ class DataWalletLayer {
         docId: doc.id,
       );
     }).toList();
+  }
+
+  Future<List<WalletData>> searchWallet(String searchController) async {
+    List<WalletData> searchResult = [];
+    List<WalletData> result = await getAllWallet();
+    for (WalletData data in result) {
+      if (data.phoneNumber.startsWith(searchController)) {
+        searchResult.add(data);
+      }
+    }
+    return searchResult;
   }
 
   Future<WalletData?> getWalletById(String id) async {
@@ -66,17 +79,16 @@ class DataWalletLayer {
       double currentLimit = wallet.walletLimit ?? 0;
 
       if (type == "سحب") {
-        wallet.walletAmount = currentAmount + (amount - cost);
+        wallet.walletAmount = currentAmount + (amount);
       } else {
-        if (wallet.walletAmount! < (amount - cost) ||
-            wallet.walletLimit! < (amount - cost)) {
+        if (wallet.walletAmount! < (cost) || wallet.walletLimit! < (cost)) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("  الرصيد/الليميت غير كافي")),
           );
           return false;
         } else {
-          wallet.walletAmount = currentAmount - (amount - cost);
-          wallet.walletLimit = currentLimit - (amount - cost);
+          wallet.walletAmount = currentAmount - (cost);
+          wallet.walletLimit = currentLimit - (cost);
         }
       }
 
@@ -108,10 +120,10 @@ class DataWalletLayer {
       double currentLimit = wallet.walletLimit ?? 0;
 
       if (type == "سحب") {
-        wallet.walletAmount = currentAmount - (amount - cost);
+        wallet.walletAmount = currentAmount - (amount);
       } else {
-        wallet.walletAmount = currentAmount + (amount - cost);
-        wallet.walletLimit = currentLimit + (amount - cost);
+        wallet.walletAmount = currentAmount + (cost);
+        wallet.walletLimit = currentLimit + (cost);
         print("${type} + ${wallet.walletAmount}");
       }
 
@@ -124,7 +136,6 @@ class DataWalletLayer {
     }
   }
 
-  // Method to delete a wallet by docId
   Future<void> deleteWallet(String docId) async {
     try {
       await firebaseFirestore.collection(collectionName).doc(docId).delete();
@@ -156,6 +167,29 @@ class DataWalletLayer {
       print("Wallet limits reset if needed.");
     } catch (e) {
       print("Error resetting wallet limits: $e");
+    }
+  }
+
+  Future<void> updateWalletCounter(String docId, int currentCounter) async {
+    await FirebaseFirestore.instance
+        .collection("walletCounter")
+        .doc(docId)
+        .update({'counter': currentCounter + 1});
+  }
+
+  Future<int> getWalletCounter(String docId) async {
+    try {
+      DocumentSnapshot counterDoc = await FirebaseFirestore.instance
+          .collection("walletCounter")
+          .doc(docId)
+          .get();
+      if (counterDoc.exists) {
+        return counterDoc['counter'] ?? 0;
+      }
+      return -1;
+    } catch (e) {
+      print("Error getting wallet counter: $e");
+      return -1;
     }
   }
 }

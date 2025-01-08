@@ -17,6 +17,10 @@ class InputBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final inputBoxWidth = screenWidth * 0.25;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -27,7 +31,7 @@ class InputBox extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          width: 300,
+          width: inputBoxWidth,
           child: TextFormField(
             controller: controller,
             readOnly: drop, // Make it readonly for dropdown functionality

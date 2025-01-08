@@ -8,9 +8,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phone_store/app_route.dart';
+import 'package:phone_store/data/firebase_data/data_balance_layer.dart';
 import 'package:phone_store/data/firebase_data/data_sales_layer.dart';
 import 'package:phone_store/data/firebase_data/data_service_layer.dart';
 import 'package:phone_store/data/firebase_data/data_wallet_layer.dart';
+import 'package:phone_store/data/repository/balance_repository.dart';
 import 'package:phone_store/data/repository/sales_repository.dart';
 import 'package:phone_store/data/repository/service_repository.dart';
 import 'package:phone_store/data/repository/wallet_repository.dart';
@@ -26,6 +28,8 @@ void main() {
       serviceRepository:
           ServiceRepository(DataServiceLayer as DataServiceLayer),
       walletRepository: WalletRepository(DataWalletLayer as DataWalletLayer),
+      balanceRepository:
+          BalanceRepository(DataBalanceLayer as DataBalanceLayer),
     ));
 
     // Verify that our counter starts at 0.

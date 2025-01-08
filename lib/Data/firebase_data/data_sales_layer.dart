@@ -16,7 +16,6 @@ class FirebaseOperations {
 
   Future<void> saveSaleRecord(SaleRecord sale, BuildContext context) async {
     try {
-      print(sale.itemName);
       StoreItem? storeItem =
           await inventoryRepository.searchStoreByName(sale.itemName);
 

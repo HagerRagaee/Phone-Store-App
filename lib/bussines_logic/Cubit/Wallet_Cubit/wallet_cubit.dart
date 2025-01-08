@@ -1,6 +1,7 @@
+// ignore_for_file: depend_on_referenced_packages
+
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:meta/meta.dart';
 import 'package:phone_store/data/models/wallet_class.dart';
 import 'package:phone_store/data/repository/wallet_repository.dart';
 
@@ -10,7 +11,6 @@ class WalletCubit extends Cubit<WalletState> {
   WalletCubit(this.walletRepository) : super(WalletInitial());
 
   List<WalletData> wallets = [];
-  List<String> phoneNumbers = [];
   WalletRepository walletRepository;
   late WalletData wallet;
 
@@ -34,6 +34,31 @@ class WalletCubit extends Cubit<WalletState> {
       emit(WalletFailure(e.toString()));
       return [];
     }
+  }
+
+  Future<List<WalletData>> searchWallet(String searchController) async {
+    try {
+      if (searchController.isEmpty) {
+        emit(WalletFetched(wallets));
+        return wallets;
+      } else {
+        final searchedWallets =
+            await walletRepository.searchWallet(searchController);
+
+        emit(WalletSearched(searchedWallets));
+        wallets = searchedWallets;
+        return searchedWallets;
+      }
+    } catch (e) {
+      emit(WalletFailure(e.toString()));
+      return [];
+    }
+  }
+
+  Future<bool> walletExists(String phoneNumber) async {
+    final wallets = getAllWallet();
+
+    return wallets.any((wallet) => wallet.phoneNumber == phoneNumber);
   }
 
   WalletData? getWalletById(String id) {
@@ -91,16 +116,26 @@ class WalletCubit extends Cubit<WalletState> {
     }
   }
 
-  // List<String> getPhoneNumbers(BuildContext context) {
-  //   try {
-  //     walletRepository.getPhoneNumbers(context).then((phoneNumbers) => {
-  //           emit(WalletFetchedPhonesNumber(phoneNumbers)),
-  //           this.phoneNumbers = phoneNumbers,
-  //         });
-  //     return phoneNumbers;
-  //   } catch (e) {
-  //     emit(WalletFailure(e.toString()));
-  //     return [];
-  //   }
-  // }
+  void updateWalletCounter(String docId, int currentCounter) {
+    try {
+      walletRepository.updateWalletCounter(docId, currentCounter);
+      emit(WalletCounterUpdated(currentCounter, docId));
+    } catch (e) {
+      emit(WalletFailure(e.toString()));
+      return;
+    }
+  }
+
+  int getWalletCounter(String docId) {
+    try {
+      walletRepository.getWalletCounter(docId).then((counter) {
+        emit(WalletCounterFetched(counter, docId));
+        return counter;
+      });
+      return 0;
+    } catch (e) {
+      emit(WalletFailure(e.toString()));
+      return 0;
+    }
+  }
 }

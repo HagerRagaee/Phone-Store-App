@@ -17,9 +17,26 @@ class WalletFetched extends WalletState {
   WalletFetched(this.Wallet);
 }
 
+class WalletSearched extends WalletState {
+  final List<WalletData> Wallet;
+  WalletSearched(this.Wallet);
+}
+
 class WalletFetchedPhonesNumber extends WalletState {
   final List<String> PhoneNumber;
   WalletFetchedPhonesNumber(this.PhoneNumber);
+}
+
+class WalletCounterUpdated extends WalletState {
+  final int counter;
+  final String docId;
+  WalletCounterUpdated(this.counter, this.docId);
+}
+
+class WalletCounterFetched extends WalletState {
+  final int counter;
+  final String docId;
+  WalletCounterFetched(this.counter, this.docId);
 }
 
 class WalletFetchedOne extends WalletState {

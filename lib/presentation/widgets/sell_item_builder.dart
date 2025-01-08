@@ -58,7 +58,7 @@ class _SellItemBuilderState extends State<SellItemBuilder> {
             )
           : null,
       body: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(30.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -66,17 +66,29 @@ class _SellItemBuilderState extends State<SellItemBuilder> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                InputBox(
-                  fieldName: "السعر",
-                  controller: widget.priceController,
+                Expanded(
+                  child: InputBox(
+                    fieldName: "السعر",
+                    controller: widget.priceController,
+                  ),
                 ),
-                InputBox(
-                  fieldName: "العدد",
-                  controller: widget.quantityController,
+                SizedBox(
+                  width: 20,
                 ),
-                InputBox(
-                  fieldName: "الصنف",
-                  controller: widget.typeController,
+                Expanded(
+                  child: InputBox(
+                    fieldName: "العدد",
+                    controller: widget.quantityController,
+                  ),
+                ),
+                SizedBox(
+                  width: 20,
+                ),
+                Expanded(
+                  child: InputBox(
+                    fieldName: "الصنف",
+                    controller: widget.typeController,
+                  ),
                 ),
               ],
             ),

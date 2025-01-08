@@ -1,4 +1,4 @@
-// ignore_for_file: unnecessary_import
+// ignore_for_file: unnecessary_import, deprecated_member_use, use_build_context_synchronously
 
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
@@ -7,11 +7,16 @@ import 'package:lottie/lottie.dart';
 import 'package:material_dialogs/dialogs.dart';
 import 'package:material_dialogs/widgets/buttons/icon_button.dart';
 import 'package:phone_store/Functions/sales_function.dart';
+import 'package:phone_store/bussines_logic/Cubit/Balance_Cubit/balance_cubit.dart';
+import 'package:phone_store/bussines_logic/Cubit/Balance_Cubit/balance_state.dart';
 import 'package:phone_store/bussines_logic/Cubit/Sales_Cubit/sales_cubit.dart';
 import 'package:phone_store/bussines_logic/Cubit/Sales_Cubit/sales_state.dart';
 import 'package:phone_store/bussines_logic/Cubit/Service_Cubit/service_cubit.dart';
 import 'package:phone_store/bussines_logic/Cubit/Service_Cubit/service_state.dart';
+import 'package:phone_store/data/firebase_data/data_balance_layer.dart';
+import 'package:phone_store/data/models/balance_model.dart';
 import 'package:phone_store/presentation/widgets/auth_button_builder.dart';
+import 'package:phone_store/presentation/widgets/balance_card.dart';
 import 'package:phone_store/presentation/widgets/sales_card.dart';
 import 'package:phone_store/presentation/widgets/sales_excel_builder.dart';
 import 'package:phone_store/presentation/widgets/service_card.dart';
@@ -26,12 +31,16 @@ class ShowTodaysSales extends StatefulWidget {
 
 class _ShowTodaysSalesState extends State<ShowTodaysSales> {
   List<DateTime?> _selectedDates = [];
+  final DataBalanceLayer dataBalanceLayer = DataBalanceLayer();
+  List<BalanceModel> balances = [];
 
   @override
   void initState() {
     super.initState();
     BlocProvider.of<SalesCubit>(context).getTodaySales();
     BlocProvider.of<ServiceCubit>(context).getTodayServices();
+    balances = BlocProvider.of<BalanceCubit>(context).getTodayBalances();
+    print(balances.length);
   }
 
   @override
@@ -42,10 +51,13 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
           IconButton(
             onPressed: () {
               if (BlocProvider.of<SalesCubit>(context).sales.isNotEmpty ||
-                  BlocProvider.of<ServiceCubit>(context).services.isNotEmpty) {
+                  BlocProvider.of<ServiceCubit>(context).services.isNotEmpty ||
+                  balances.isNotEmpty) {
                 SalesToExcel.createExcelFile(
-                    BlocProvider.of<SalesCubit>(context).sales,
-                    BlocProvider.of<ServiceCubit>(context).services);
+                  BlocProvider.of<SalesCubit>(context).sales,
+                  BlocProvider.of<ServiceCubit>(context).services,
+                  BlocProvider.of<BalanceCubit>(context).balanceRecordes,
+                );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('No data to export!')),
@@ -83,7 +95,7 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
                 var results = await showCalendarDatePicker2Dialog(
                   context: context,
                   config: CalendarDatePicker2WithActionButtonsConfig(),
-                  dialogSize: const Size(325, 400),
+                  dialogSize: const Size(325, 200),
                   value: _selectedDates,
                   borderRadius: BorderRadius.circular(15),
                 );
@@ -91,11 +103,13 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
                   setState(() {
                     _selectedDates = results;
                   });
-                  await BlocProvider.of<SalesCubit>(context)
+                  BlocProvider.of<SalesCubit>(context)
                       .getSalesByDate(_selectedDates);
                   context
                       .read<ServiceCubit>()
                       .getServicesByDate(_selectedDates);
+
+                  context.read<BalanceCubit>().getBalanceByDate(_selectedDates);
                 }
               },
               icon: Icon(Icons.date_range),
@@ -106,47 +120,148 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
               builder: (context, salesState) {
                 return BlocBuilder<ServiceCubit, ServiceState>(
                   builder: (context, serviceState) {
-                    if (BlocProvider.of<SalesCubit>(context).sales.isEmpty &&
-                        BlocProvider.of<ServiceCubit>(context)
-                            .services
-                            .isEmpty) {
-                      return Center(child: CircularProgressIndicator());
-                    }
+                    return BlocBuilder<BalanceCubit, BalanceState>(
+                        builder: (context, state) {
+                      if (BlocProvider.of<SalesCubit>(context).sales.isEmpty &&
+                          BlocProvider.of<ServiceCubit>(context)
+                              .services
+                              .isEmpty &&
+                          BlocProvider.of<BalanceCubit>(context)
+                              .balanceRecordes
+                              .isEmpty) {
+                        return Center(child: CircularProgressIndicator());
+                      }
 
-                    if (BlocProvider.of<SalesCubit>(context).sales.isNotEmpty &&
-                        BlocProvider.of<ServiceCubit>(context)
-                            .services
-                            .isEmpty) {
+                      if (BlocProvider.of<SalesCubit>(context)
+                              .sales
+                              .isNotEmpty &&
+                          BlocProvider.of<ServiceCubit>(context)
+                              .services
+                              .isEmpty &&
+                          BlocProvider.of<BalanceCubit>(context)
+                              .balanceRecordes
+                              .isEmpty) {
+                        return ListView(
+                          children: [
+                            SalesCard(),
+                            SizedBox(height: 20),
+                            CalculateTotalSales(),
+                          ],
+                        );
+                      }
+                      if (BlocProvider.of<ServiceCubit>(context)
+                              .services
+                              .isNotEmpty &&
+                          (BlocProvider.of<SalesCubit>(context).sales.isEmpty &&
+                              BlocProvider.of<BalanceCubit>(context)
+                                  .balanceRecordes
+                                  .isEmpty)) {
+                        return ListView(
+                          children: [
+                            ServiceCard(),
+                            SizedBox(height: 20),
+                            CalculateTotalSales(),
+                          ],
+                        );
+                      }
+                      if (BlocProvider.of<ServiceCubit>(context)
+                              .services
+                              .isEmpty &&
+                          (BlocProvider.of<SalesCubit>(context).sales.isEmpty &&
+                              BlocProvider.of<BalanceCubit>(context)
+                                  .balanceRecordes
+                                  .isNotEmpty)) {
+                        balances = BlocProvider.of<BalanceCubit>(context)
+                            .balanceRecordes;
+
+                        print(balances.length);
+                        return ListView(
+                          children: [
+                            BalanceCard(),
+                            SizedBox(height: 20),
+                            CalculateTotalSales(),
+                          ],
+                        );
+                      }
+
+                      if (BlocProvider.of<ServiceCubit>(context)
+                              .services
+                              .isNotEmpty &&
+                          (BlocProvider.of<SalesCubit>(context).sales.isEmpty &&
+                              BlocProvider.of<BalanceCubit>(context)
+                                  .balanceRecordes
+                                  .isNotEmpty)) {
+                        balances = BlocProvider.of<BalanceCubit>(context)
+                            .balanceRecordes;
+
+                        print(balances.length);
+                        return ListView(
+                          children: [
+                            ServiceCard(),
+                            SizedBox(height: 20),
+                            BalanceCard(),
+                            SizedBox(height: 20),
+                            CalculateTotalSales(),
+                          ],
+                        );
+                      }
+
+                      if (BlocProvider.of<ServiceCubit>(context)
+                              .services
+                              .isEmpty &&
+                          (BlocProvider.of<SalesCubit>(context)
+                                  .sales
+                                  .isNotEmpty &&
+                              BlocProvider.of<BalanceCubit>(context)
+                                  .balanceRecordes
+                                  .isNotEmpty)) {
+                        balances = BlocProvider.of<BalanceCubit>(context)
+                            .balanceRecordes;
+
+                        print(balances.length);
+                        return ListView(
+                          children: [
+                            SalesCard(),
+                            SizedBox(height: 20),
+                            BalanceCard(),
+                            SizedBox(height: 20),
+                            CalculateTotalSales(),
+                          ],
+                        );
+                      }
+
+                      if (BlocProvider.of<ServiceCubit>(context)
+                              .services
+                              .isNotEmpty &&
+                          (BlocProvider.of<SalesCubit>(context)
+                                  .sales
+                                  .isNotEmpty &&
+                              BlocProvider.of<BalanceCubit>(context)
+                                  .balanceRecordes
+                                  .isEmpty)) {
+                        return ListView(
+                          children: [
+                            SalesCard(),
+                            SizedBox(height: 20),
+                            ServiceCard(),
+                            SizedBox(height: 20),
+                            CalculateTotalSales(),
+                          ],
+                        );
+                      }
+
                       return ListView(
                         children: [
                           SalesCard(),
-                          SizedBox(height: 40),
-                          CalculateTotalSales(),
-                        ],
-                      );
-                    }
-                    if (BlocProvider.of<ServiceCubit>(context)
-                            .services
-                            .isNotEmpty &&
-                        (BlocProvider.of<SalesCubit>(context).sales.isEmpty)) {
-                      return ListView(
-                        children: [
+                          SizedBox(height: 20),
                           ServiceCard(),
-                          SizedBox(height: 40),
+                          SizedBox(height: 20),
+                          BalanceCard(),
+                          SizedBox(height: 20),
                           CalculateTotalSales(),
                         ],
                       );
-                    }
-
-                    return ListView(
-                      children: [
-                        SalesCard(),
-                        SizedBox(height: 40),
-                        ServiceCard(),
-                        SizedBox(height: 60),
-                        CalculateTotalSales(),
-                      ],
-                    );
+                    });
                   },
                 );
               },
@@ -159,7 +274,7 @@ class _ShowTodaysSalesState extends State<ShowTodaysSales> {
 }
 
 class CalculateTotalSales extends StatefulWidget {
-  CalculateTotalSales({super.key});
+  const CalculateTotalSales({super.key});
 
   @override
   State<CalculateTotalSales> createState() => _CalculateTotalSalesState();
@@ -173,11 +288,13 @@ class _CalculateTotalSalesState extends State<CalculateTotalSales> {
         buttonName: "مبيعات اليوم",
         click: () async {
           double totalSales = calculateTotalSales(context);
+          double totalProfit = await calculateTotalProfit(context);
 
           Dialogs.materialDialog(
             dialogWidth: 300,
             color: Colors.white,
-            msg: 'اجمالي مبيعات: ${totalSales.toStringAsFixed(2)}',
+            msg:
+                'اجمالي مبيعات: ${totalSales.toStringAsFixed(2)} \n اجمالي الربح:  ${totalProfit.toStringAsFixed(2)} ',
             title: 'Daily Sales',
             lottieBuilder: LottieBuilder.asset(
               'images/profit2.json',
